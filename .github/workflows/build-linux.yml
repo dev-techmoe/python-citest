@@ -53,6 +53,7 @@ jobs:
     strategy:
         matrix:
           python-version: [ 3.8.2 ]
+          arch: [ armv7, aarch64 ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -62,30 +63,25 @@ jobs:
         with:
           arch: armv7
           distro: ubuntu18.04
-
-          # Not required, but speeds up builds by storing container images in
-          # a GitHub package registry.
           githubToken: ${{ github.token }}
-
-          # Set an output parameter `uname` for use in subsequent steps
           run: |
             echo "\ndeb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu bionic main" >> /etc/apt/source.list
             apt-get update
             apt-get install python3.8 python3.8-dev python3-pip python3.8-venv -y
-            python3.8 -m pip install poetry virtualenv
+            python3.8 -m pip install poetry
             poetry update
-            poetry install
-            poetry run pyinstaller jsonip/cli.py -F
-      # - name: Create Release
-      #   id: create_release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ github.ref }}
-      #     release_name: Release ${{ github.ref }}
-      #     draft: false
-      #     prerelease: true
+            poetry install --no-ansi
+            poetry run pyinstaller jsonip/cli.py -F --no-ansi
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: true
       - name: Upload Release Asset
         id: upload-release-asset 
         uses: actions/upload-release-asset@v1
