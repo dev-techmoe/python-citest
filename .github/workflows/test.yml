@@ -20,8 +20,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -V || 1
-          python3 -V || 1
           pwd
           python -m pip install poetry
           poetry update
