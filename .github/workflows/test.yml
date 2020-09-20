@@ -1,0 +1,27 @@
+name: test
+on: push
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.5, 3.6, 3.7, 3.8]
+        runs-on: [ubuntu-20.04, macos-10.15, windows-2019]
+    steps:
+      # Checks out a copy of your repository on the ubuntu-latest machine
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pwd
+          python -m pip install poetry
+          poetry install
+      - name: Test with pytest
+        runs-on: ${{ matrix.runs-on }}
+        run: pytest tests
