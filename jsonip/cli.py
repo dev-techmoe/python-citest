@@ -1,5 +1,6 @@
 from aiohttp import ClientSession
 import asyncio
+from . import version
 
 async def get_ip():
     async with ClientSession(trust_env=True) as sess:
@@ -7,6 +8,7 @@ async def get_ip():
             return await resp.json()
 
 def run():
+    print('JSONIP Version ' + version.VERSION)
     print(asyncio.run(get_ip()))
 
 if __name__ == '__main__':
