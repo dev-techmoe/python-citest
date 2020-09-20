@@ -10,7 +10,7 @@ getjsonip = "jsonip.cli:run"
 
 
 [tool.poetry.dependencies]
-python = "^3.5"
+python = "^3.7"
 aiohttp = "^3.6.2"
 requests = "^2.24.0"
 
