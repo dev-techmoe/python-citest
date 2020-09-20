@@ -72,20 +72,20 @@ jobs:
             echo "\ndeb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu bionic main" >> /etc/apt/source.list
             apt-get update
             apt-get install python3.8 python3.8-dev python3-pip -y
-            python3 --no-color -m pip install poetry
+            python3 -m pip install poetry --no-color
             poetry update
             poetry install
             poetry run pyinstaller jsonip/cli.py -F
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: true
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ github.ref }}
+      #     release_name: Release ${{ github.ref }}
+      #     draft: false
+      #     prerelease: true
       - name: Upload Release Asset
         id: upload-release-asset 
         uses: actions/upload-release-asset@v1
