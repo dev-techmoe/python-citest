@@ -24,6 +24,7 @@ jobs:
           python3 -V || 1
           pwd
           python -m pip install poetry
+          poetry update
           poetry install
       - name: Test with pytest
         run: pytest tests
