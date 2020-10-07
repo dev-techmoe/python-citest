@@ -5,9 +5,25 @@ on:
       - '*'
 
 jobs:
+  create-release:
+    name: create-release
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: true
+
   build-linux:
     name: build-linux
     runs-on: ubuntu-20.04
+    needs: [ 'create-release' ]
     strategy:
         matrix:
           python-version: [ 3.8.2 ]
@@ -26,19 +42,24 @@ jobs:
       - name: Build executable file
         run: |
           poetry run pyinstaller jsonip/cli.py -F
-      - name: Stash release file
-        uses: actions/upload-artifact@v2
-        with:
-          name: linux
-          path: ./dist/cli
       - name: Test app executable
         run: |
           chmod +x ./dist/cli
           ./dist/cli || true
+      - name: Upload Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }} 
+          asset_path: ./dist/cli
+          asset_name: jsonip-linux-386
+          asset_content_type: application/x-binary
 
   build-linux-arm:
     name: build-linux-arm
     runs-on: ubuntu-20.04
+    needs: [ 'create-release' ]
     strategy:
         matrix:
           python-version: [ 3.8.2 ]
@@ -50,7 +71,7 @@ jobs:
         name: Run commands
         id: runcmd
         with:
-          arch: armv7
+          arch: ${{ matrix.arch }}
           distro: ubuntu18.04
           githubToken: ${{ github.token }}
           install: |
@@ -64,15 +85,20 @@ jobs:
             # test app executable
             chmod +x ./dist/cli
             ./dist/cli -h || true
-      - name: Stash release file
-        uses: actions/upload-artifact@v2
+      - name: Upload Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: linux-arm
-          path: ./dist/cli
+          upload_url: ${{ needs.create-release.outputs.upload_url }} 
+          asset_path: ./dist/cli
+          asset_name: jsonip-linux-${{ matrix.arch }}
+          asset_content_type: application/x-binary
           
   build-zipapp:
     name: build-zipapp
     runs-on: ubuntu-20.04
+    needs: [ 'create-release' ]
     strategy:
         matrix:
           python-version: [ 3.8.2 ]
@@ -94,59 +120,72 @@ jobs:
           cp -R jsonip pyz
           poetry run pip install -r requirements.txt --target pyz
           poetry run python -m zipapp -m 'jsonip.cli:run' pyz
-      - name: Stash release file
-        uses: actions/upload-artifact@v2
-        with:
-          name: zipapp
-          path: ./pyz.pyz
-  
-  release:
-    name: release
-    needs: ['build-linux', 'build-linux-arm', 'build-zipapp']
-    runs-on: ubuntu-20.04
-
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
-      - name: ls
-        run: |
-          sudo apt-get -y install tree
-          tree || true
-          ls -lah
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: true
-      - name: Upload Release - linux
+      - name: Upload Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: linux/cli
-          asset_name: linux-386-jsonip
-          asset_content_type: application/x-binary
-      - name: Upload Release - linux arm
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: linux-arm/cli
-          asset_name: linux-armhf-jsonip
-          asset_content_type: application/x-binary
-      - name: Upload Release - zipapp
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: zipapp/pyz.pyz
+          upload_url: ${{ needs.create-release.outputs.upload_url }} 
+          asset_path: ./pyz.pyz
           asset_name: jsonip.pyz
           asset_content_type: application/x-binary
+  
+  # release:
+  #   name: release
+  #   needs: ['build-linux', 'build-linux-arm', 'build-zipapp']
+  #   runs-on: ubuntu-20.04
+
+  #   steps:
+  #     - name: Download artifacts
+  #       uses: actions/download-artifact@v2
+  #     - name: ls
+  #       run: |
+  #         sudo apt-get -y install tree
+  #         tree || true
+  #         ls -lah
+  #     - name: Create Release
+  #       id: create_release
+  #       uses: actions/create-release@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         tag_name: ${{ github.ref }}
+  #         release_name: Release ${{ github.ref }}
+  #         draft: true
+  #         prerelease: true
+  #     - name: Upload Release - linux
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }} 
+  #         asset_path: linux/cli
+  #         asset_name: linux-386-jsonip
+  #         asset_content_type: application/x-binary
+  #     - name: Upload Release - linux armv7
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }} 
+  #         asset_path: linux-armv7/cli
+  #         asset_name: linux-armhf-jsonip
+  #         asset_content_type: application/x-binary
+  #     - name: Upload Release - linux aarch64
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }} 
+  #         asset_path: linux-arm/cli
+  #         asset_name: linux-armhf-jsonip
+  #         asset_content_type: application/x-binary
+  #     - name: Upload Release - zipapp
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ steps.create_release.outputs.upload_url }} 
+  #         asset_path: zipapp/pyz.pyz
+  #         asset_name: jsonip.pyz
+  #         asset_content_type: application/x-binary
