@@ -31,6 +31,10 @@ jobs:
         with:
           name: linux
           path: ./dist/cli
+      - name: Test app executable
+        run: |
+          chmod +x ./dist/cli
+          ./dist/cli || true
 
   build-linux-arm:
     name: build-linux-arm
@@ -61,6 +65,10 @@ jobs:
         with:
           name: linux-arm
           path: ./dist/cli
+      - name: Test app executable
+        run: |
+          chmod +x ./dist/cli
+          ./dist/cli || true
           
   build-zipapp:
     name: build-zipapp
