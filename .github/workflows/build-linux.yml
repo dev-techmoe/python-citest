@@ -26,26 +26,11 @@ jobs:
       - name: Build executable file
         run: |
           poetry run pyinstaller jsonip/cli.py -F
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Stash release file
+        uses: actions/upload-artifact@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: true
-      - name: Upload Release Asset
-        id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: ./dist/cli
-          asset_name: linux-386-jsonip
-          asset_content_type: application/x-binary
+          name: linux
+          path: ./dist/cli
 
   build-linux-arm:
     name: build-linux-arm
@@ -71,6 +56,49 @@ jobs:
             python3.8 -m pip install poetry
             poetry install --no-ansi
             poetry run pyinstaller jsonip/cli.py -F
+      - name: Stash release file
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux-arm
+          path: ./dist/cli
+          
+  build-zipapp:
+    name: build-zipapp
+    runs-on: ubuntu-20.04
+    strategy:
+        matrix:
+          python-version: [ 3.8.2 ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies and build standalone zipapp
+        run: |
+          python -m pip install poetry
+          poetry install
+          poetry export -f requirements.txt --without-hashes > requirements.txt
+
+          # modify info to your app's
+          mkdir pyz
+          cp -R jsonip pyz
+          poetry run pip install -r requirements.txt --target pyz
+          poetry run python -m zipapp -m 'jsonip.cli:run' pyz
+      - name: Stash release file
+        uses: actions/upload-artifact@v2
+        with:
+          name: zipapp
+          path: ./jsonip.pyz
+  
+  release:
+    name: release
+    needs: ['build-linux', 'build-linux-arm', 'build-zipapp']
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -81,13 +109,33 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: true
-      - name: Upload Release Asset
+      - name: Upload Release - linux
         id: upload-release-asset 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: ./dist/cli
-          asset_name: linux-armv7-jsonip
+          asset_path: linux
+          asset_name: linux-386-jsonip
+          asset_content_type: application/x-binary
+      - name: Upload Release - linux arm
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: linux-arm
+          asset_name: linux-armhf-jsonip
+          asset_content_type: application/x-binary
+      - name: Upload Release - zipapp
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: zipapp
+          asset_name: jsonip.pyz
           asset_content_type: application/x-binary
