@@ -94,7 +94,7 @@ jobs:
   
   release:
     name: release
-    needs: ['build-linux', 'build-linux-arm', 'build-zipapp']
+    needs: ['build-linux',  'build-zipapp']
     runs-on: ubuntu-20.04
 
     steps:
