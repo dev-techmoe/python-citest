@@ -121,24 +121,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: linux
+          asset_path: linux/cli
           asset_name: linux-386-jsonip
           asset_content_type: application/x-binary
-      - name: Upload Release - linux arm
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: linux-arm
-          asset_name: linux-armhf-jsonip
-          asset_content_type: application/x-binary
+      # - name: Upload Release - linux arm
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }} 
+      #     asset_path: linux-arm
+      #     asset_name: linux-armhf-jsonip
+      #     asset_content_type: application/x-binary
       - name: Upload Release - zipapp
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: zipapp
+          asset_path: zipapp/pyz.pyz
           asset_name: jsonip.pyz
           asset_content_type: application/x-binary
