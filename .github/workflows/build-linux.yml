@@ -102,6 +102,7 @@ jobs:
         uses: actions/download-artifact@v2
       - name: ls
         run: |
+          apt-get -y install tree
           tree || 1
           ls -lah
       - name: Create Release
