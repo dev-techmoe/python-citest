@@ -61,15 +61,14 @@ jobs:
           run: |
             poetry install --no-ansi
             poetry run pyinstaller jsonip/cli.py -F
+            # test app executable
+            chmod +x ./dist/cli
+            ./dist/cli -h || true
       - name: Stash release file
         uses: actions/upload-artifact@v2
         with:
           name: linux-arm
           path: ./dist/cli
-      - name: Test app executable
-        run: |
-          chmod +x ./dist/cli
-          ./dist/cli || true
           
   build-zipapp:
     name: build-zipapp
