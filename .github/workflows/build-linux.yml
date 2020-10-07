@@ -32,35 +32,35 @@ jobs:
           name: linux
           path: ./dist/cli
 
-  # build-linux-arm:
-  #   name: build-linux-arm
-  #   runs-on: ubuntu-20.04
-  #   strategy:
-  #       matrix:
-  #         python-version: [ 3.8.2 ]
-  #         arch: [ armv7, aarch64 ]
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v2
-  #     - uses: uraimo/run-on-arch-action@v2.0.5
-  #       name: Run commands
-  #       id: runcmd
-  #       with:
-  #         arch: armv7
-  #         distro: ubuntu18.04
-  #         githubToken: ${{ github.token }}
-  #         run: |
-  #           echo "\ndeb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu bionic main" >> /etc/apt/source.list
-  #           apt-get update
-  #           apt-get install python3.8 python3.8-dev python3-pip python3.8-venv -y
-  #           python3.8 -m pip install poetry
-  #           poetry install --no-ansi
-  #           poetry run pyinstaller jsonip/cli.py -F
-  #     - name: Stash release file
-  #       uses: actions/upload-artifact@v2
-  #       with:
-  #         name: linux-arm
-  #         path: ./dist/cli
+  build-linux-arm:
+    name: build-linux-arm
+    runs-on: ubuntu-20.04
+    strategy:
+        matrix:
+          python-version: [ 3.8.2 ]
+          arch: [ armv7, aarch64 ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: uraimo/run-on-arch-action@v2.0.5
+        name: Run commands
+        id: runcmd
+        with:
+          arch: armv7
+          distro: ubuntu18.04
+          githubToken: ${{ github.token }}
+          run: |
+            echo "\ndeb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu bionic main" >> /etc/apt/source.list
+            apt-get update
+            apt-get install python3.8 python3.8-dev python3-pip python3.8-venv -y
+            python3.8 -m pip install poetry
+            poetry install --no-ansi
+            poetry run pyinstaller jsonip/cli.py -F
+      - name: Stash release file
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux-arm
+          path: ./dist/cli
           
   build-zipapp:
     name: build-zipapp
@@ -94,7 +94,7 @@ jobs:
   
   release:
     name: release
-    needs: ['build-linux',  'build-zipapp']
+    needs: ['build-linux', 'build-linux-arm', 'build-zipapp']
     runs-on: ubuntu-20.04
 
     steps:
@@ -124,15 +124,15 @@ jobs:
           asset_path: linux/cli
           asset_name: linux-386-jsonip
           asset_content_type: application/x-binary
-      # - name: Upload Release - linux arm
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }} 
-      #     asset_path: linux-arm
-      #     asset_name: linux-armhf-jsonip
-      #     asset_content_type: application/x-binary
+      - name: Upload Release - linux arm
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: linux-arm/cli
+          asset_name: linux-armhf-jsonip
+          asset_content_type: application/x-binary
       - name: Upload Release - zipapp
         uses: actions/upload-release-asset@v1
         env:
