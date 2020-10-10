@@ -3,6 +3,9 @@ on:
   push:
     tags:
       - '*'
+env:
+  project-name: jsonip
+  pyinstaller-entry: jsonip/__main__.py
 
 jobs:
   create-release:
@@ -43,19 +46,17 @@ jobs:
           poetry install
       - name: Build executable file
         run: |
-          poetry run pyinstaller jsonip/__main__.py -F
-      - name: Test app executable
-        run: |
-          chmod +x ./dist/__main__
-          ./dist/__main__ || true
+          poetry run pyinstaller ${{ env.pyinstaller-entry }} -F
+          cd dist
+          mv $(ls | awk 'NR==1{print $0}') app
       - name: Upload Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }} 
-          asset_path: ./dist/__main__
-          asset_name: jsonip-linux-386
+          asset_path: ./dist/app
+          asset_name: ${{ env.project-name }}-linux-amd64
           asset_content_type: application/x-binary
 
   build-linux-arm:
@@ -70,7 +71,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - uses: uraimo/run-on-arch-action@v2.0.5
-        name: Run commands
+        name: Install dependencies and build app
         id: runcmd
         with:
           arch: ${{ matrix.arch }}
@@ -83,18 +84,17 @@ jobs:
             python3.8 -m pip install poetry
           run: |
             poetry install --no-ansi
-            poetry run pyinstaller jsonip/__main__.py -F
-            # test app executable
-            chmod +x ./dist/__main__
-            ./dist/__main__ -h || true
+            poetry run pyinstaller ${{ env.pyinstaller-entry }} -F
+            cd dist
+            mv $(ls | awk 'NR==1{print $0}') app
       - name: Upload Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }} 
-          asset_path: ./dist/__main__
-          asset_name: jsonip-linux-${{ matrix.arch }}
+          asset_path: ./dist/app
+          asset_name: ${{ env.project-name }}-linux-${{ matrix.arch }}
           asset_content_type: application/x-binary
   
   build-windows-x64:
@@ -108,52 +108,57 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies and build standalone zipapp
+      - name: Install dependencies and build app
         run: |
           python -m pip install poetry
           poetry install --no-ansi
-          poetry run pyinstaller jsonip/__main__.py -F
+          poetry run pyinstaller ${{ env.pyinstaller-entry }} -F
+
+          cd dist
+          $file = Get-ChildItem .;
+          $file = $file[0].Name
+          mv $file app.exe
       - name: Upload Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }} 
-          asset_path: ./dist/__main__.exe
-          asset_name: jsonip-windows-x64
+          asset_path: ./dist/app.exe
+          asset_name: ${{ env.project-name }}-windows-amd64.exe
           asset_content_type: application/x-binary
   
-  build-zipapp:
-    name: build-zipapp
-    runs-on: ubuntu-20.04
-    needs: [ 'create-release' ]
-    strategy:
-        matrix:
-          python-version: [ 3.8.2 ]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies and build standalone zipapp
-        run: |
-          python -m pip install poetry
-          poetry install
-          poetry export -f requirements.txt --without-hashes > requirements.txt
+  # build-zipapp:
+  #   name: build-zipapp
+  #   runs-on: ubuntu-20.04
+  #   needs: [ 'create-release' ]
+  #   strategy:
+  #       matrix:
+  #         python-version: [ 3.8.2 ]
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v2
+  #     - name: Set up Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #     - name: Install dependencies and build standalone zipapp
+  #       run: |
+  #         python -m pip install poetry
+  #         poetry install
+  #         poetry export -f requirements.txt --without-hashes > requirements.txt
 
-          # modify info to your app's
-          mkdir pyz
-          cp -R jsonip pyz
-          poetry run pip install -r requirements.txt --target pyz
-          poetry run python -m zipapp -m 'jsonip.cli:run' pyz
-      - name: Upload Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }} 
-          asset_path: ./pyz.pyz
-          asset_name: jsonip.pyz
-          asset_content_type: application/x-binary
+  #         # modify info to your app's
+  #         mkdir pyz
+  #         cp -R jsonip pyz
+  #         poetry run pip install -r requirements.txt --target pyz
+  #         poetry run python -m zipapp -m 'jsonip.cli:run' pyz
+  #     - name: Upload Release
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         upload_url: ${{ needs.create-release.outputs.upload_url }} 
+  #         asset_path: ./pyz.pyz
+  #         asset_name: ${{ env.project-name }}.pyz
+  #         asset_content_type: application/x-binary
