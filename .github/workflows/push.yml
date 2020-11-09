@@ -1,0 +1,17 @@
+name: push
+on: push
+
+jobs:
+  push:
+    name: push-test-file
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: write some files and push
+        run: |
+          echo $(date) > test.file
+          git add test.file
+          git commit -m "Auto pushed on $(date)"
+          git push origin master
+      
